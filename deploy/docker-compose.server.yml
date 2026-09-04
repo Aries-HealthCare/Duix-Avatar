@@ -1,0 +1,89 @@
+# Duix-Avatar GPU Docker Compose (Production / Remote Server)
+# Requires: Linux (Ubuntu 22.04+ or WSL2), NVIDIA GPU (>= 8GB VRAM), NVIDIA Container Toolkit
+# Usage: docker compose -f docker-compose.server.yml up -d
+
+networks:
+  duix_network:
+    driver: bridge
+
+volumes:
+  duix_voice_data:
+    driver: local
+  duix_face2face_data:
+    driver: local
+
+services:
+  # 1. FunASR Speech-to-Text Service
+  duix-avatar-asr:
+    image: guiji2025/fun-asr
+    container_name: duix-avatar-asr
+    restart: always
+    privileged: true
+    working_dir: /workspace/FunASR/runtime
+    ports:
+      - '10095:10095'
+    command: sh /run.sh
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    networks:
+      - duix_network
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 10095 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # 2. Fish-Speech Voice Cloning & Text-to-Speech
+  duix-avatar-tts:
+    image: guiji2025/fish-speech-ziming
+    container_name: duix-avatar-tts
+    restart: always
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,graphics,utility,video,display
+    ports:
+      - '18180:8080'
+    volumes:
+      - duix_voice_data:/code/data
+    command: /bin/bash -c "/opt/conda/envs/python310/bin/python3 tools/api_server.py --listen 0.0.0.0:8080"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    networks:
+      - duix_network
+    depends_on:
+      - duix-avatar-asr
+
+  # 3. Duix Video Synthesis & Digital Human Face2Face Generator
+  duix-avatar-gen-video:
+    image: guiji2025/duix.avatar
+    container_name: duix-avatar-gen-video
+    restart: always
+    privileged: true
+    shm_size: '8g'
+    ports:
+      - '8383:8383'
+    volumes:
+      - duix_face2face_data:/code/data
+    environment:
+      - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    command: python /code/app_local.py
+    networks:
+      - duix_network

@@ -6,6 +6,7 @@ function initFFmpeg() {
   const ffmpegPath = {
     'development-win32': path.join(__dirname, '../../resources/ffmpeg/win-amd64/bin/ffmpeg.exe'),
     'development-linux': path.join(__dirname, '../../resources/ffmpeg/linux-amd64/ffmpeg'),
+    'development-darwin': 'ffmpeg',
     'production-win32': path.join(
       process.resourcesPath,
       'app.asar.unpacked',
@@ -22,21 +23,28 @@ function initFFmpeg() {
       'ffmpeg',
       'linux-amd64',
       'ffmpeg'
-    )
+    ),
+    'production-darwin': 'ffmpeg'
   }
 
   if(process.env.NODE_ENV === undefined){
     process.env.NODE_ENV = 'production'
   }
 
-  const ffmpegPathValue = ffmpegPath[`${process.env.NODE_ENV}-${process.platform}`]
+  const ffmpegKey = `${process.env.NODE_ENV}-${process.platform}`
+  const ffmpegPathValue = ffmpegPath[ffmpegKey] || 'ffmpeg'
   log.debug('ENV:', `${process.env.NODE_ENV}-${process.platform}`)
   log.info('FFmpeg path:', ffmpegPathValue)
-  ffmpeg.setFfmpegPath(ffmpegPathValue)
+  try {
+    ffmpeg.setFfmpegPath(ffmpegPathValue)
+  } catch (err) {
+    log.warn('Could not set custom ffmpeg path, falling back to system PATH:', err)
+  }
 
   const ffprobePath = {
     'development-win32': path.join(__dirname, '../../resources/ffmpeg/win-amd64/bin/ffprobe.exe'),
     'development-linux': path.join(__dirname, '../../resources/ffmpeg/linux-amd64/ffprobe'),
+    'development-darwin': 'ffprobe',
     'production-win32': path.join(
       process.resourcesPath,
       'app.asar.unpacked',
@@ -53,12 +61,18 @@ function initFFmpeg() {
       'ffmpeg',
       'linux-amd64',
       'ffprobe'
-    )
+    ),
+    'production-darwin': 'ffprobe'
   }
 
-  const ffprobePathValue = ffprobePath[`${process.env.NODE_ENV}-${process.platform}`]
+  const ffprobeKey = `${process.env.NODE_ENV}-${process.platform}`
+  const ffprobePathValue = ffprobePath[ffprobeKey] || 'ffprobe'
   log.info('FFprobe path:', ffprobePathValue)
-  ffmpeg.setFfprobePath(ffprobePathValue)
+  try {
+    ffmpeg.setFfprobePath(ffprobePathValue)
+  } catch (err) {
+    log.warn('Could not set custom ffprobe path, falling back to system PATH:', err)
+  }
 }
 
 initFFmpeg()

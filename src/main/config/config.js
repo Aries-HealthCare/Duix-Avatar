@@ -4,9 +4,11 @@ import os from 'os'
 const isDev = process.env.NODE_ENV === 'development'
 const isWin = process.platform === 'win32'
 
+const defaultHost = process.env.DUIX_HOST || '127.0.0.1'
+
 export const serviceUrl = {
-  face2face: isDev ? 'http://192.168.4.204:8383/easy' : 'http://127.0.0.1:8383/easy',
-  tts: isDev ? 'http://192.168.4.204:18180' : 'http://127.0.0.1:18180'
+  face2face: process.env.DUIX_FACE2FACE_URL || `http://${defaultHost}:8383/easy`,
+  tts: process.env.DUIX_TTS_URL || `http://${defaultHost}:18180`
 }
 
 export const assetPath = {
