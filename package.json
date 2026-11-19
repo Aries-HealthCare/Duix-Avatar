@@ -47,5 +47,10 @@
     "raw-loader": "^4.0.2",
     "vite": "^5.3.5",
     "vue": "^3.5.13"
+  },
+  "overrides": {
+    "follow-redirects": "^1.16.2",
+    "minimatch": "^11.0.1",
+    "postcss": "^8.5.23"
   }
 }
